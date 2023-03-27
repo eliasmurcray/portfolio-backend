@@ -13,39 +13,54 @@ app.get('/', (req, res) => {
 
 // Retrieve API Key
 const { MC_APIKEY, MC_INSTANCE, MC_LISTID, RECAPTCHA_SECRET_KEY } = require('./secret.json');
-
 const request = require('superagent');
+
 app.post('/signup', (req, res) => {
+  if(!req.body)
+    return res.status(400).send('No request body provided');
   if(!req.body.token)
-    return res.status(401).send(new Error('Authorization header is required'));
+    return res.status(400).send('Key \'token\' is required');
   if(!req.body.email)
-    return res.status(400).send(new Error('Key \'body\' is required'));
+    return res.status(400).send('Key \'email\' is required');
   if(!req.body.firstName)
-    return res.status(400).send(new Error('Key \'firstName\' is required'));
+    return res.status(400).send('Key \'firstName\' is required');
   if(!req.body.lastName)
-    return res.status(400).send(new Error('Key \'lastName\' is required'));
+    return res.status(400).send('Key \'lastName\' is required');
   
-  console.log('Attempting to send email with', JSON.stringify(req.body, null, 4));
-  
+  console.log('Attempting to subscribe with', JSON.stringify(req.body, null, 4));
+
   request
-    .post('https://' + MC_INSTANCE + '.api.mailchimp.com/3.0/lists/' + MC_LISTID + '/members/')
-    .set('Content-Type', 'application/json;charset=utf-8')
-    .set('Authorization', 'Basic ' + Buffer.from('any:' + MC_APIKEY ).toString('base64'))
-    .send({
-      'email_address': req.body.email,
-      'status': 'subscribed',
-      'merge_fields': {
-        'FNAME': req.body.firstName,
-        'LNAME': req.body.lastName
+    .post(`https://www.google.com/recaptcha/api/siteverify?secret=${RECAPTCHA_SECRET_KEY}&response=${req.body.token}`)
+    .then((response) => {
+      const json = JSON.parse(response.text);
+      if(json.success === true) {
+        request
+        .post('https://' + MC_INSTANCE + '.api.mailchimp.com/3.0/lists/' + MC_LISTID + '/members/')
+        .set('Content-Type', 'application/json;charset=utf-8')
+        .set('Authorization', 'Basic ' + Buffer.from('any:' + MC_APIKEY ).toString('base64'))
+        .send({
+          'email_address': req.body.email,
+          'status': 'subscribed',
+          'merge_fields': {
+            'FNAME': req.body.firstName,
+            'LNAME': req.body.lastName
+          }
+        })
+        .end(function(err, response) {
+          if (response.status < 300 || (response.status === 400 && response.body.title === 'Member Exists')) {
+            res.send('Signed Up!');
+          } else {
+            res.send('Sign Up Failed: ' + JSON.stringify(response, null, 4));
+          }
+        });
+      } else {
+        return res.status(401).send('Invalid ReCAPTCHA token');
       }
     })
-    .end(function(err, response) {
-      if (response.status < 300 || (response.status === 400 && response.body.title === 'Member Exists')) {
-        res.send('Signed Up!');
-      } else {
-        res.send('Sign Up Failed: ' + JSON.stringify(response, null, 4));
-      }
-      });
+    .catch((err) => {
+      console.error(err);
+      return res.status(400).send('Error in ReCAPTCHA validation');
+    });
 });
 
 app.listen(3000, () => {
