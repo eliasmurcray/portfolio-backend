@@ -1,9 +1,13 @@
 const app = require('express')();
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const fs = require('fs');
+const https = require('https');
+
+const PORT = 3000;
 
 app.use(cors({
-  origin: ['https://sbcta-hosting.web.app', 'http://127.0.0.1:5500', 'http://localhost:5500']
+  origin: ['https://sanbernardinocountyteachersassociation.com', 'https://sbcta-hosting.web.app', 'http://127.0.0.1:5500', 'http://localhost:5500']
 }));
 app.use(bodyParser.json());
 
@@ -63,6 +67,11 @@ app.post('/signup', (req, res) => {
     });
 });
 
-app.listen(3000, () => {
-  console.log('Server listening on port 3000');
+const options = {
+  key: fs.readFileSync('/etc/letsencrypt/live/api.sanbernardinocountyteachersassociation.com/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/api.sanbernardinocountyteachersassociation.com/fullchain.pem')
+};
+
+https.createServer(options, app).listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
