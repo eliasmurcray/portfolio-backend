@@ -16,15 +16,11 @@ app.get('/', (_req, res) => {
   res.send('Server is running');
 });
 
-// const options = {
-//   key: fs.readFileSync('/etc/letsencrypt/live/api.sanbernardinocountyteachersassociation.com/privkey.pem'),
-//   cert: fs.readFileSync('/etc/letsencrypt/live/api.sanbernardinocountyteachersassociation.com/fullchain.pem')
-// };
+const options = {
+  key: fs.readFileSync('/etc/letsencrypt/live/api.eliasmurcray.com/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/api.eliasmurcray.com/fullchain.pem')
+};
 
-// https.createServer(options, app).listen(PORT, () => {
-//   console.log(`Server listening on port ${PORT}`);
-// });
-
-app.listen(PORT, () => {
+https.createServer(options, app).listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
